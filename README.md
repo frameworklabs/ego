@@ -50,3 +50,7 @@ When in AUTO mode, the robot will drive straight ahead until it detects an obsta
 Stop the AUTO mode again with pressing either the main button of the Stick or the Joystick.
 
 You could activate the two modes also directly on the Robot by pressing the blue button once for MANUAL mode and twice for AUTO mode. Pressing the red button will stop the ego vehicle. The UI on the Stick will then reflect the decisions made by the buttons on the robot.
+
+## Misc
+
+This project uses [proto_activities](https://github.com/frameworklabs/proto_activities) which is a programming concept inspired by the imperative synchronous programming language [Blech](https://www.blech-lang.org).
