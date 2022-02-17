@@ -338,17 +338,17 @@ pa_activity (Run, pa_ctx(pa_use(RunAuto)), Intent intent, Speed joySpeed, uint16
 // Controller
 
 pa_activity (RangeSubscriber, pa_ctx(), uint16_t& range) {
-    plankton.subscribe(52, {});
+    plankton.subscribe(Topic::RANGE, {});
     pa_always {
-        plankton.read(52, (uint8_t*)&range, 2);
+        plankton.read(Topic::RANGE, (uint8_t*)&range, 2);
     } pa_always_end;
 } pa_end;
 
 pa_activity (JoystickSubscriber, pa_ctx(), Speed& speed) {
-    plankton.subscribe(53, {});
+    plankton.subscribe(Topic::JOYSTICK, {});
     pa_always {
         uint8_t buf[3];
-        plankton.read(53, buf, 3);
+        plankton.read(Topic::JOYSTICK, buf, 3);
         speed.x = buf[0];
         speed.y = buf[1];
     } pa_always_end;
