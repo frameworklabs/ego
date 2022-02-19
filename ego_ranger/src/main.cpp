@@ -78,7 +78,7 @@ pa_activity (ModeController, pa_ctx(pa_use(RangeController); pa_use(BlinkLED)), 
     }
 } pa_end;
 
-pa_activity (Main, pa_ctx(pa_co_res(4); Press press;
+pa_activity (Main, pa_ctx(pa_co_res(2); Press press;
                           pa_use(BlinkLED); pa_use(Connector); 
                           pa_use(PressRecognizer); pa_use(ModeController)), 
                    bool setupOK) {

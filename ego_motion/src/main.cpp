@@ -312,6 +312,7 @@ pa_activity (Rotate, pa_ctx(), bool clockwise, Speed& speed) {
 } pa_end;
 
 pa_activity (RunAuto, pa_ctx(pa_use(DriveForwardAndSetRot); pa_use(Rotate); bool rotClockwise), uint16_t range, Speed& speed) {
+    setLED(CRGB::Blue);
     while (true) {
         if (range > 300) {
             pa_when_abort (range <= 300, DriveForwardAndSetRot, speed, pa_self.rotClockwise);
@@ -320,18 +321,18 @@ pa_activity (RunAuto, pa_ctx(pa_use(DriveForwardAndSetRot); pa_use(Rotate); bool
     }
 } pa_end;
 
-pa_activity (Run, pa_ctx(pa_use(RunAuto)), Intent intent, Speed joySpeed, uint16_t rangeValue, Speed& speed) {
-    if (intent == Intent::START_MANU) {
-        setLED(CRGB::Green);
+pa_activity (RunManual, pa_ctx(), Speed joySpeed, Speed& speed) {
+    setLED(CRGB::Green);
+    pa_always {
+        speed = joySpeed;
+    } pa_always_end;
+} pa_end;
 
-        while (!(intent == Intent::STOP || (joySpeed.y > 10 && rangeValue < 80))) {
-            speed = joySpeed;
-            pa_pause;
-        }
-    }
-    else {
-        setLED(CRGB::Blue);
-        pa_when_abort (intent == Intent::STOP, RunAuto, rangeValue, speed);
+pa_activity (Run, pa_ctx(pa_use(RunAuto); pa_use(RunManual)), Intent intent, Speed joySpeed, uint16_t range, Speed& speed) {
+    if (intent == Intent::START_MANU) {
+        pa_when_abort (intent != Intent::START_MANU || (joySpeed.y > 10 && range < 80), RunManual, joySpeed, speed);
+    } else {
+        pa_when_abort (intent != Intent::START_AUTO, RunAuto, range, speed);
     }
 } pa_end;
 
@@ -354,14 +355,14 @@ pa_activity (JoystickSubscriber, pa_ctx(), Speed& speed) {
     } pa_always_end;
 } pa_end;
 
-pa_activity (Logger, pa_ctx(), Speed speed, uint16_t rangeValue) {
+pa_activity (Logger, pa_ctx(), Speed speed, uint16_t range) {
     pa_always {
         Serial.printf("speed x: %u, y: %u\n", speed.x, speed.y);
-        Serial.printf("range: %u\n", rangeValue);
+        Serial.printf("range: %u\n", range);
     } pa_always_end;
 } pa_end;
 
-pa_activity (Controller, pa_ctx(pa_co_res(6); uint16_t rangeValue; Speed speed;
+pa_activity (Controller, pa_ctx(pa_co_res(6); uint16_t range; Speed speed;
                              Speed joySpeed; pa_use(JoystickSubscriber);
                              pa_use(Run); pa_use(BlinkLED); pa_use(Logger);
                              pa_use(RangeSubscriber); pa_use(Actuator); pa_use(Lights)), 
@@ -376,11 +377,11 @@ pa_activity (Controller, pa_ctx(pa_co_res(6); uint16_t rangeValue; Speed speed;
         }
         pa_co(6) {
             pa_with_weak (JoystickSubscriber, pa_self.joySpeed);
-            pa_with_weak (RangeSubscriber, pa_self.rangeValue);
-            pa_with (Run, intent, pa_self.joySpeed, pa_self.rangeValue, pa_self.speed);
+            pa_with_weak (RangeSubscriber, pa_self.range);
+            pa_with (Run, intent, pa_self.joySpeed, pa_self.range, pa_self.speed);
             pa_with_weak (Actuator, pa_self.speed);
             pa_with_weak (Lights, pa_self.speed);
-            pa_with_weak (Logger, pa_self.speed, pa_self.rangeValue);
+            pa_with_weak (Logger, pa_self.speed, pa_self.range);
         } pa_co_end;
 
         stopActuator();
