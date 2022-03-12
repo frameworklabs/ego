@@ -289,7 +289,7 @@ static void stopActuator() {
 
 pa_activity (DriveForward, pa_ctx(), Speed& speed) {
     speed.x = 0;
-    speed.y = 80;
+    speed.y = 100;
     pa_halt;
 } pa_end;
 
@@ -311,7 +311,7 @@ pa_activity (Rotate, pa_ctx(), bool clockwise, Speed& speed) {
     pa_halt;
 } pa_end;
 
-pa_activity (RunAuto, pa_ctx(pa_use(DriveForwardAndSetRot); pa_use(Rotate); bool rotClockwise), uint16_t range, Speed& speed) {
+pa_activity (RunAutoCore, pa_ctx(pa_use(DriveForwardAndSetRot); pa_use(Rotate); bool rotClockwise), uint16_t range, Speed& speed) {
     setLED(CRGB::Blue);
     while (true) {
         if (range > 300) {
@@ -321,16 +321,45 @@ pa_activity (RunAuto, pa_ctx(pa_use(DriveForwardAndSetRot); pa_use(Rotate); bool
     }
 } pa_end;
 
-pa_activity (RunManual, pa_ctx(), Speed joySpeed, Speed& speed) {
+static int8_t restrictChange(int8_t commandedVal, int8_t val, int8_t maxChange) {
+    const auto delta = commandedVal - val;
+    if (delta >= maxChange) {
+        return val + maxChange;
+    } else if (delta <= -maxChange) {
+        return val - maxChange;
+    } else {
+        return val + delta;
+    }
+}
+
+pa_activity (SpeedFilter, pa_ctx(), Speed commandedSpeed, Speed& speed) {
+    pa_always {
+        speed.x = restrictChange(commandedSpeed.x, speed.x, 40);
+        speed.y = restrictChange(commandedSpeed.y, speed.y, 20);
+    } pa_always_end;
+} pa_end;
+
+pa_activity (RunAuto, pa_ctx(pa_co_res(2); pa_use(RunAutoCore); pa_use(SpeedFilter); Speed commandedSpeed), uint16_t range, Speed& speed) {
+    pa_co(2) {
+        pa_with (RunAutoCore, range, pa_self.commandedSpeed);
+        pa_with (SpeedFilter, pa_self.commandedSpeed, speed);
+    } pa_co_end;
+} pa_end;
+
+pa_activity (RunManual, pa_ctx(), Speed joySpeed, uint16_t range, Speed& speed) {
     setLED(CRGB::Green);
     pa_always {
-        speed = joySpeed;
+        if (joySpeed.y > 10 && range < 80) {
+            speed = {};
+        } else {
+            speed = joySpeed;
+        }
     } pa_always_end;
 } pa_end;
 
 pa_activity (Run, pa_ctx(pa_use(RunAuto); pa_use(RunManual)), Intent intent, Speed joySpeed, uint16_t range, Speed& speed) {
     if (intent == Intent::START_MANU) {
-        pa_when_abort (intent != Intent::START_MANU || (joySpeed.y > 10 && range < 80), RunManual, joySpeed, speed);
+        pa_when_abort (intent != Intent::START_MANU, RunManual, joySpeed, range, speed);
     } else {
         pa_when_abort (intent != Intent::START_AUTO, RunAuto, range, speed);
     }
@@ -357,7 +386,7 @@ pa_activity (JoystickSubscriber, pa_ctx(), Speed& speed) {
 
 pa_activity (Logger, pa_ctx(), Speed speed, uint16_t range) {
     pa_always {
-        Serial.printf("speed x: %u, y: %u\n", speed.x, speed.y);
+        Serial.printf("speed x: %d, y: %d\n", speed.x, speed.y);
         Serial.printf("range: %u\n", range);
     } pa_always_end;
 } pa_end;
@@ -384,6 +413,7 @@ pa_activity (Controller, pa_ctx(pa_co_res(6); uint16_t range; Speed speed;
             pa_with_weak (Logger, pa_self.speed, pa_self.range);
         } pa_co_end;
 
+        pa_self.speed = {};
         stopActuator();
         stopLights();
         setLED(CRGB::Red);
