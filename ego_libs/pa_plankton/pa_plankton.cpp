@@ -7,11 +7,21 @@ Plankton plankton;
 pa_activity_def (Connector) {
     Serial.println("Connectecing to WLAN...");  
 
-    WiFi.setHostname("logo");
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    WiFi.setAutoReconnect(true);
+    WiFi.begin("ego");
     pa_await (WiFi.isConnected());
 
     Serial.println("Connectecing to WLAN...DONE");  
+
+    plankton.begin();
+} pa_end;
+
+pa_activity_def (AccessPoint) {
+    Serial.println("Starting WLAN AccessPoint...");  
+
+    WiFi.softAP("ego", NULL, 1, 1);
+
+    Serial.println("Starting WLAN AccessPoint...DONE");  
 
     plankton.begin();
 } pa_end;

@@ -75,11 +75,16 @@ pa_activity (PressPublisher, pa_ctx(Press prevPress), Press press) {
 } pa_end;
 
 pa_activity (InputCombiner, pa_ctx(), bool stopButton, Intent intent, Press& press) {
-    pa_always {
+    while (true) {
         if (intent != Intent::STOP && stopButton) {
             press = Press::SHORT;
         }
-    } pa_always_end;
+        if (press == Press::LONG) {
+            press = Press::NO;
+            break;
+        }
+        pa_pause;
+    }
 } pa_end;
 
 // Joystick
@@ -246,23 +251,27 @@ pa_activity (Main, pa_ctx(pa_co_res(10); Press rawPress; Press press; Intent int
         pa_run (ErrorScreen);
     }
 
-    pa_co(2) {
-        pa_with (Connector);
-        pa_with_weak (ConnectorScreen);
-    } pa_co_end;
+    while (true) {
+        pa_co(2) {
+            pa_with (Connector);
+            pa_with_weak (ConnectorScreen);
+        } pa_co_end;
 
-    pa_co(10) {
-        pa_with (Receiver);
-        pa_with (IntentSubscriber, pa_self.intent);
-        pa_with (JoystickReader, pa_self.joyX, pa_self.joyY, pa_self.rawStopButton);
-        pa_with (MainScreen, pa_self.intent, pa_self.joyX, pa_self.joyY);
-        pa_with (PressRecognizer2, M5.BtnA, M5.BtnB, pa_self.rawPress);
-        pa_with (IntentChangeDetector, pa_self.intent, pa_self.intentChanged);
-        pa_with (Dimmer, DIMMER_CONFIG, pa_self.rawPress, pa_self.intentChanged, pa_self.press);
-        pa_with (RaisingEdgeDetector, pa_self.rawStopButton, pa_self.stopButton);
-        pa_with (InputCombiner, pa_self.stopButton, pa_self.intent, pa_self.press);
-        pa_with (PressPublisher, pa_self.press);
-    } pa_co_end;
+        pa_co(10) {
+            pa_with_weak (Receiver);
+            pa_with_weak (IntentSubscriber, pa_self.intent);
+            pa_with_weak (JoystickReader, pa_self.joyX, pa_self.joyY, pa_self.rawStopButton);
+            pa_with_weak (MainScreen, pa_self.intent, pa_self.joyX, pa_self.joyY);
+            pa_with_weak (PressRecognizer2, M5.BtnA, M5.BtnB, pa_self.rawPress);
+            pa_with_weak (IntentChangeDetector, pa_self.intent, pa_self.intentChanged);
+            pa_with_weak (Dimmer, DIMMER_CONFIG, pa_self.rawPress, pa_self.intentChanged, pa_self.press);
+            pa_with_weak (RaisingEdgeDetector, pa_self.rawStopButton, pa_self.stopButton);
+            pa_with (InputCombiner, pa_self.stopButton, pa_self.intent, pa_self.press);
+            pa_with_weak (PressPublisher, pa_self.press);
+        } pa_co_end;
+
+        pa_self.intent = Intent::STOP;
+    }
 } pa_end;
 
 // Setup and Loop

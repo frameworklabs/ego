@@ -17,8 +17,12 @@ public:
         udp_.begin(planktonPort);
     }
 
+    bool isReady() const {
+        return WiFi.getMode() != WIFI_MODE_STA || WiFi.isConnected();
+    }
+
     bool publish(uint32_t topic, const uint8_t* data, size_t size) {
-        if (!WiFi.isConnected()) {
+        if (!isReady()) {
             return false;
         }
         if (udp_.beginPacket(IPAddress(0xFFFFFFFF), planktonPort) != 1) {
@@ -42,7 +46,7 @@ public:
     }
 
     bool poll() {
-        if (!WiFi.isConnected()) {
+        if (!isReady()) {
             return false;
         }
 
@@ -71,7 +75,7 @@ public:
     }
 
     bool read(uint32_t topic, uint8_t* data, size_t size) {
-        if (!WiFi.isConnected()) {
+        if (!isReady()) {
             return false;
         }
         const auto it = entries_.find(topic);

@@ -10,5 +10,6 @@
 extern Plankton plankton;
 
 pa_activity_decl (Connector, pa_ctx());
+pa_activity_decl (AccessPoint, pa_ctx());
 
 pa_activity_decl (Receiver, pa_ctx());
